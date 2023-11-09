@@ -1,7 +1,17 @@
+# https://mcsp.wartburg.edu/zelle/python/graphics/graphics/node3.html
+
 import shutil
 from os import walk
 import os
 
+from threading import Thread
+import winsound
+#import keyboard  # using module keyboard
+import tkinter as tk
+#pip install graphics.py
+from graphics import *
+import msvcrt
+#import EncryptionAndDecryption
 
 wraparound = 255
 
@@ -33,7 +43,10 @@ def Encrypt_Data(str_to_encrypt, code, nums):
         encrypted[i] = letter ^ num
     return encrypted
 
-        
+def errorMessage(str):
+    errorText = textEntry(Point(2+(MainBoxW/2), 50), str)
+    errorText.draw(win)
+    # Delete after a few seconds
 
 #def Decrypt_Data(str_to_decrypt, nums):
 
@@ -135,7 +148,12 @@ def clearContents(folder):
         except Exception as e:
             print('Failed to delete %s. Reason: %s' % (file_path, e))
 
+
+total_done = 0
+
 def getFiles(path, Local_Write_Path, encrypting, addition_to_path = ""):
+    global total_done
+    global file_count
     f = []
     d = []
     nums = generate_Keys(code) # Generates keys
@@ -152,6 +170,8 @@ def getFiles(path, Local_Write_Path, encrypting, addition_to_path = ""):
                 os.makedirs(newpath)
         # copies files
         for i in range(len(filenames)):
+            total_done += 1
+            fillProgressBar(total_done / file_count)
             print(filenames[i])
             fileObj = open(path + "\\"+filenames[i], mode="rb")
             filetext = fileObj.read()
@@ -214,10 +234,8 @@ def decryptFolderName(my_str, code):
         bufferStr += chr(valueList[i])
     print(valueList)
     return bufferStr
-total_done = 0
+
 def encryptFolderNames(path, code):
-    global total_done
-    total_done += 1
     f = []
     d = []
     for (dirpath, dirnames, filenames) in walk(path):
@@ -228,7 +246,6 @@ def encryptFolderNames(path, code):
                 encryptedName = encryptFolderName(d[i], code)
                 os.rename(path + "\\" + d[i], path + "\\" + encryptedName)
                 encryptFolderNames(path + "\\" + encryptedName, code)
-                fillProgressBar(file_count / total_done)
 
 def decryptFolderNames(path, code):
     f = []
@@ -243,10 +260,197 @@ def decryptFolderNames(path, code):
                 print("2:", path + "\\" + decryptedName)
                 os.rename(path + "\\" + d[i], path + "\\" + decryptedName)
                 decryptFolderNames(path + "\\" + decryptedName, code)
+    
+MainBoxW = 64
 
-# clearContents(writePath) # Do not put this in the encrypt function or it will break it
-# getFiles(mypath, writePath, True)
-# encryptFolderNames(writePath, code)
-# clearContents(decryptPath)
-# getFiles(writePath, decryptPath, False)
-# decryptFolderNames(decryptPath, code)
+win = GraphWin(width = 550, height = 300) # create a window
+#win.canvas.cords()
+win.setBackground("white")
+screenW = 110
+screenH = 60
+win.setCoords(0, screenH, screenW, 0) # set the coordinates of the window; bottom left is (0, 0) and top right is (10, 10)
+
+Recent_Paths = [] # Search through "Recent Paths" file
+
+# Draws plus button
+# Draws minus button
+
+# Draws text: "Enter encrypted folder path:"
+pathText = Text(Point(MainBoxW/2,15), "Enter the path of the folder to encrypt:")
+pathText.draw(win)
+
+# Draws text entry box
+textEntry = Entry(Point(MainBoxW/2,20),32)
+textEntry.draw(win)
+text = textEntry.getText()
+
+
+# Draws text: "Enter password:"
+pathText = Text(Point(MainBoxW/2,25), "Enter password:")
+pathText.draw(win)
+
+# Draws password entry box
+PasswordTextEntry = Entry(Point(MainBoxW/2,30),32)
+PasswordTextEntry.draw(win)
+PasswordText = textEntry.getText()
+
+# Generates folder selection border
+border = Rectangle(Point(2,2), Point(MainBoxW-2, screenH - 2))
+border.draw(win)
+
+
+
+
+# Creates gen new folder box and text
+checkBox_W_H = 2 # The width and height of the checkbox
+newFolderCheckBox = Rectangle(Point(MainBoxW+2,5), Point(MainBoxW+2 + checkBox_W_H, 5 + checkBox_W_H))
+newFolderCheckBox.setFill(color_rgb(20, 200, 20))
+#newFolderBox.setOutline(color_rgb(0, 0, 0))
+newFolderCheckBox.draw(win)
+
+folderText = Text(Point(88,5+(checkBox_W_H/2)), "Generate a new folder upon\n decryption & Encryption?")
+folderText.draw(win)
+
+# Draws "Decrypt" & "Encrypt" Buttons
+DecryptBox = Rectangle(Point(2 + 2, screenH - 4 - 6), Point(MainBoxW / 2 - 1, screenH - 4))
+DecryptBox.setFill(color_rgb(150,190,255))
+DecryptBox.draw(win)
+
+decryptLabel = Text(Point(2 + (MainBoxW / 4), screenH - 4 - 3), "DECRYPT")
+#decryptLabel.setFill(color_rgb(255,255,255))
+decryptLabel.draw(win)
+
+EncryptBox = Rectangle(Point(1 + (MainBoxW/2), screenH - 4 - 6), Point(MainBoxW - 4, screenH - 4))
+EncryptBox.setFill(color_rgb(245, 245, 220))
+EncryptBox.draw(win)
+
+encryptLabel = Text(Point((MainBoxW)-(MainBoxW/4)-2, screenH - 4 - 3), "ENCRYPT")
+#encryptLabel.setFill(color_rgb(255,255,255))
+encryptLabel.draw(win)
+
+#Plus_Button = Image(Point(10,10),)
+#Plus_Button.draw(win)
+#Minus_Button = Image()
+#Minus_Button.draw(win)
+
+# Draws progress bar Border
+ProgressBarBorder = Rectangle(Point(64, 50), Point(screenW - 2, screenH - 2))
+ProgressBarBorder.draw(win)
+
+ProgressBarFill = 0
+# Percent ranges from 0 to 1
+completeText = 0
+def fillProgressBar(percent, complete = False):
+    global completeText
+    global ProgressBarFill
+    if ProgressBarFill != 0:
+        ProgressBarFill.undraw()
+        ProgressBarFill = 0
+
+    if (ProgressBarFill == 0):
+        diffW = 64 - (screenW- 2)
+        print(diffW)
+        ProgressBarFill = Rectangle(Point(64, 50), Point((-diffW * percent) + 64,screenH - 2))
+        ProgressBarFill.setFill(color_rgb(20, 200, 20))
+        ProgressBarFill.draw(win)
+    if complete:
+        completeText = Text(Point((64 + (-diffW * percent) + 64) / 2, (50 + screenH - 2) / 2), "COMPLETE")
+        completeText.setFill(color_rgb(255,255,255))
+        completeText.draw(win)
+    elif (completeText != 0):
+        completeText.undraw()
+
+
+def checkForClick(mousePos, Obj):
+    #mousePos = win.getMouse()
+    if (mousePos.getX() > Obj.getP1().getX() and mousePos.getX() < Obj.getP2().getX() and mousePos.getY() > Obj.getP1().getY() and mousePos.getY() < Obj.getP2().getY()):
+        return True
+    else:
+        return False
+
+GenNewFolder = True
+
+# Create missing paths (decrypted folder, encrypted folder) in case they are missing
+writePath = ""
+decryptPath = ""
+def createMissingPaths(basePath):
+    global writePath
+    global decryptPath
+    writePath = basePath + " - Encrypted"
+    if not os.path.exists(writePath):
+        os.makedirs(writePath)
+
+    decryptPath = basePath + " - Decrypted"
+    if not os.path.exists(decryptPath):
+        os.makedirs(decryptPath)
+
+# returns total number of files under a directory and it's subdirectories
+def get_file_count(start_path = "C:\\Users\\tripp\\OneDrive\\Documents\Python\\Test Folder"):
+    filecount = 0
+    for dirpath, dirnames, filenames in os.walk(start_path):
+        for f in filenames:
+            fp = os.path.join(dirpath, f)
+            # skip if it is symbolic link
+            if not os.path.islink(fp):
+                #filecount += os.path.getsize(fp)
+                filecount += 1
+
+    return filecount
+
+code = "Password"
+
+def removeExtraQuotes(str):
+    newStr = str
+    if (str[0] == '"' and str[len(str) - 1] == '"'):
+        newStr = ""
+        for i in range(1, len(str) - 1):
+            newStr += str[i]
+    else:
+        newStr = str
+    print(newStr)
+    return newStr
+
+def isPasswordValid(str, decrypting):
+    if len(str) < 8:
+        errorMessage("PASSWORD MUST BE AT LEAST CHARACTERS LONG")
+        return False
+    else:
+        return True
+
+
+while True:
+    mousePos = win.getMouse()
+    if (checkForClick(mousePos, EncryptBox)):
+        fillProgressBar(0)
+        filepath = textEntry.getText()
+        filepath = removeExtraQuotes(filepath)
+        password = PasswordTextEntry.getText()
+        createMissingPaths(filepath)
+        file_count = get_file_count(filepath)
+        total_done = 0
+        clearContents(writePath) # Do not put this in the encrypt function or it will break it
+        getFiles(filepath, writePath, True)
+        encryptFolderNames(writePath, code)
+        fillProgressBar(1, True)
+    if (checkForClick(mousePos, DecryptBox)):
+        fillProgressBar(0)
+        filepath = textEntry.getText()
+        filepath = removeExtraQuotes(filepath)
+        password = PasswordTextEntry.getText()
+        print("name", filepath[0:-12])
+        createMissingPaths(filepath[0:-12])
+        file_count = get_file_count(writePath)
+        total_done = 0
+        clearContents(decryptPath)
+        getFiles(writePath, decryptPath, False)
+        decryptFolderNames(decryptPath, code)
+        fillProgressBar(1, True)
+    if (checkForClick(mousePos, newFolderCheckBox)):
+        GenNewFolder = not GenNewFolder
+        if (GenNewFolder):
+            newFolderCheckBox.setFill(color_rgb(200, 20, 20))
+        else:
+            newFolderCheckBox.setFill(color_rgb(20, 200, 20))
+        print("A")
+
+win.close()

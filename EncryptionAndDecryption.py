@@ -2,6 +2,7 @@ import shutil
 from os import walk
 import os
 
+
 wraparound = 255
 
 def clamp(input, LB, UB):
@@ -116,8 +117,8 @@ def encryptFolderName(my_str, code):
 code = "Password"
 nums = generate_Keys(code)
 
-if not os.path.exists(writePath):
-    os.makedirs(writePath)
+#if not os.path.exists(writePath):
+    #os.makedirs(writePath)
 
 def rename_directory(old_name, new_name):
 
@@ -213,8 +214,10 @@ def decryptFolderName(my_str, code):
         bufferStr += chr(valueList[i])
     print(valueList)
     return bufferStr
-
+total_done = 0
 def encryptFolderNames(path, code):
+    global total_done
+    total_done += 1
     f = []
     d = []
     for (dirpath, dirnames, filenames) in walk(path):
@@ -225,6 +228,7 @@ def encryptFolderNames(path, code):
                 encryptedName = encryptFolderName(d[i], code)
                 os.rename(path + "\\" + d[i], path + "\\" + encryptedName)
                 encryptFolderNames(path + "\\" + encryptedName, code)
+                fillProgressBar(file_count / total_done)
 
 def decryptFolderNames(path, code):
     f = []
@@ -239,3 +243,10 @@ def decryptFolderNames(path, code):
                 print("2:", path + "\\" + decryptedName)
                 os.rename(path + "\\" + d[i], path + "\\" + decryptedName)
                 decryptFolderNames(path + "\\" + decryptedName, code)
+
+# clearContents(writePath) # Do not put this in the encrypt function or it will break it
+# getFiles(mypath, writePath, True)
+# encryptFolderNames(writePath, code)
+# clearContents(decryptPath)
+# getFiles(writePath, decryptPath, False)
+# decryptFolderNames(decryptPath, code)
